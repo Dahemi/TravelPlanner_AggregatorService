@@ -55,17 +55,28 @@ export class AggregatorService {
       const [flightsResult, hotelsResult] = results;
 
       if (flightsResult.status === 'fulfilled') {
-        flights = flightsResult.value;
+        const flightData = flightsResult.value;
+
+        if (flightData.flights.length === 0) {
+          flights = { message: 'No flights available for this route' };
+        } else {
+          flights = flightData;
+        }
       } else {
         degraded = true;
-        flights = null;
+        flights = { message: 'Flight service unavailable' };
       }
 
       if (hotelsResult.status === 'fulfilled') {
-        hotels = hotelsResult.value;
+        const hotelData = hotelsResult.value;
+        if (hotelData.hotels.length === 0) {
+          hotels = { message: 'No hotels available for this destination' };
+        } else {
+          hotels = hotelData;
+        }
       } else {
         degraded = true;
-        hotels = null;
+        hotels = { message: 'Hotel service unavailable' };
       }
     } catch (error) {
       this.logger.warn(`Timeout or failure: ${error.message}`);
