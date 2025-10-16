@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, BadRequestException } from '@nestjs/common';
 import { AggregatorService } from './aggregator.service.js';
 
 @Controller()
@@ -11,6 +11,11 @@ export class AggregatorController {
     @Query('to') to: string,
     @Query('date') date: string,
   ) {
+    if (!from || !to || !date) {
+      throw new BadRequestException({
+        message: 'Missing required query parameters: from, to, date',
+      });
+    }
     return this.aggregatorService.searchTrips(from, to, date);
   }
 
@@ -20,6 +25,11 @@ export class AggregatorController {
     @Query('to') to: string,
     @Query('date') date: string,
   ) {
+    if (!from || !to || !date) {
+      throw new BadRequestException({
+        message: 'Missing required query parameters: from, to, date',
+      });
+    }
     return this.aggregatorService.cheapestRoute(from, to, date);
   }
 
@@ -29,6 +39,11 @@ export class AggregatorController {
     @Query('to') to: string,
     @Query('date') date: string,
   ) {
+    if (!from || !to || !date) {
+      throw new BadRequestException({
+        message: 'Missing required query parameters: from, to, date',
+      });
+    }
     return this.aggregatorService.contextualTrip(from, to, date);
   }
 
@@ -38,6 +53,11 @@ export class AggregatorController {
     @Query('to') to: string,
     @Query('date') date: string,
   ) {
+    if (!from || !to || !date) {
+      throw new BadRequestException({
+        message: 'Missing required query parameters: from, to, date',
+      });
+    }
     return this.aggregatorService.searchTripsV2(from, to, date);
   }
 
@@ -55,6 +75,11 @@ export class AggregatorController {
     @Query('to') to: string,
     @Query('date') date: string,
   ) {
+    if (!from || !to || !date) {
+      throw new BadRequestException({
+        message: 'Missing required query parameters: from, to, date',
+      });
+    }
     return this.aggregatorService.searchTripsCB(from, to, date);
   }
 
