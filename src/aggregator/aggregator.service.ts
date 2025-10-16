@@ -21,7 +21,7 @@ export class AggregatorService {
 
     const timeoutBudget = 1000;
 
-    const flightURL = `http://localhost:3001/flights/search?from=${from}&to=${to}`;
+    const flightURL = `http://localhost:3001/flights/search?from=${from}&to=${to}&date=${date}`;
     const hotelURL = `http://localhost:3002/hotel/search?to=${to}`;
 
     async function withTimeout(promise, name) {
@@ -86,9 +86,9 @@ export class AggregatorService {
   }
 
   // ---------- CHAINING ----------
-  async cheapestRoute(from: string, to: string) {
+  async cheapestRoute(from: string, to: string, date: string) {
     const timeoutBudget = 1000;
-    const cheapestFlightURL = `http://localhost:3001/flights/cheapest?from=${from}&to=${to}`;
+    const cheapestFlightURL = `http://localhost:3001/flights/cheapest?from=${from}&to=${to}&date=${date}`;
     const hotelSearchURL = `http://localhost:3002/hotel/search`;
 
     async function withTimeout(promise, name) {
@@ -142,7 +142,7 @@ export class AggregatorService {
     const coastalDestinations = ['CMB', 'BKK', 'MLE'];
     const isCoastal = coastalDestinations.includes(to);
 
-    const flightURL = `http://localhost:3001/flights/search?from=${from}&to=${to}`;
+    const flightURL = `http://localhost:3001/flights/search?from=${from}&to=${to}&date=${date}`;
     const hotelURL = `http://localhost:3002/hotel/search?to=${to}`;
     const eventsURL = `http://localhost:3003/events/search?to=${to}&date=${date}`;
 
@@ -175,16 +175,33 @@ export class AggregatorService {
         ),
       ];
 
-      [flights, hotels] = await Promise.allSettled(baseCalls);
-      if (flights.status === 'rejected' || hotels.status === 'rejected') {
+      const results = await Promise.allSettled(baseCalls);
+
+      const [flightsResult, hotelsResult] = results;
+
+      if (flightsResult.status === 'fulfilled') {
+        const flightData = flightsResult.value;
+
+        if (flightData.flights.length === 0) {
+          flights = { message: 'No flights available for this route' };
+        } else {
+          flights = flightData;
+        }
+      } else {
         degraded = true;
+        flights = { message: 'Flight service unavailable' };
       }
 
-      if (flights.status === 'fulfilled') {
-        flights = flights.value;
-      }
-      if (hotels.status === 'fulfilled') {
-        hotels = hotels.value;
+      if (hotelsResult.status === 'fulfilled') {
+        const hotelData = hotelsResult.value;
+        if (hotelData.hotels.length === 0) {
+          hotels = { message: 'No hotels available for this destination' };
+        } else {
+          hotels = hotelData;
+        }
+      } else {
+        degraded = true;
+        hotels = { message: 'Hotel service unavailable' };
       }
 
       // call conditionally
@@ -197,10 +214,12 @@ export class AggregatorService {
         this.logger.log(
           `Destination ${to} is inland → skipping events-service`,
         );
+        events = { message: 'No events for inland destinations' };
       }
     } catch (error) {
       this.logger.warn(`Timeout or failure: ${error.message}`);
       degraded = true;
+      events = { message: 'Events service unavailable' };
     }
 
     return { flights, hotels, events, degraded };
@@ -213,7 +232,7 @@ export class AggregatorService {
 
     const timeoutBudget = 1000;
     const flightURL = `http://localhost:3001/flights/search?from=${from}&to=${to}&date=${date}`;
-    const hotelURL = `http://localhost:3002/hotel/search?to=${to}&date=${date}`;
+    const hotelURL = `http://localhost:3002/hotel/search?to=${to}`;
     const weatherURL = `http://localhost:3004/weather/forecast?city=${to}&date=${date}`;
 
     async function withTimeout(promise, name) {
@@ -251,14 +270,22 @@ export class AggregatorService {
 
       if (flightResponse.status === 'fulfilled') {
         flights = flightResponse.value;
+        if (flights.flights.length === 0) {
+          flights = { message: 'No flights available for this route' };
+        }
       } else {
         degraded = true;
+        flights = { message: 'Flight service unavailable' };
       }
 
       if (hotelResponse.status === 'fulfilled') {
         hotels = hotelResponse.value;
+        if (hotels.hotels.length === 0) {
+          hotels = { message: 'No hotels available for this destination' };
+        }
       } else {
         degraded = true;
+        hotels = { message: 'Hotel service unavailable' };
       }
 
       if (weatherResponse.status === 'fulfilled') {
