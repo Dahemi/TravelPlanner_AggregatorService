@@ -50,12 +50,22 @@ export class AggregatorService {
     let degraded = false;
 
     try {
-      [flights, hotels] = await Promise.allSettled([
-        flightPromise,
-        hotelPromise,
-      ]);
-      if (flights.status === 'rejected' || hotels.status === 'rejected') {
+      const results = await Promise.allSettled([flightPromise, hotelPromise]);
+
+      const [flightsResult, hotelsResult] = results;
+
+      if (flightsResult.status === 'fulfilled') {
+        flights = flightsResult.value;
+      } else {
         degraded = true;
+        flights = null;
+      }
+
+      if (hotelsResult.status === 'fulfilled') {
+        hotels = hotelsResult.value;
+      } else {
+        degraded = true;
+        hotels = null;
       }
     } catch (error) {
       this.logger.warn(`Timeout or failure: ${error.message}`);
@@ -333,6 +343,7 @@ export class AggregatorService {
         degraded: true,
         summary: 'Weather data unavailable (CB open)',
       };
+      degraded = true;
       this.weatherBreaker.pushOutcome(0);
     } else {
       // breaker is either CLOSE / HALF-OPEN
